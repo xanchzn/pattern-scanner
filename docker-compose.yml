@@ -1,0 +1,27 @@
+services:
+  scanner:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_PATH: /data/scanner.sqlite
+      PAIR_LIMIT: ${PAIR_LIMIT:-50}
+      MIN_COINW_VOLUME: ${MIN_COINW_VOLUME:-0}
+      SCAN_INTERVAL_SECONDS: ${SCAN_INTERVAL_SECONDS:-900}
+    volumes:
+      - scanner_data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health',timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  web:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:3000:3000"
+    environment:
+      BACKEND_URL: http://scanner:8000
+    depends_on:
+      - scanner
+volumes:
+  scanner_data:
